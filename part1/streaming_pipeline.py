@@ -13,7 +13,7 @@ from configs import (OUTPUT_TABLE, TOPIC_ENRICHED, TOPIC_EVENT_RESULTS, jdbc_url
 
 PACKAGES = ",".join([
     f"org.apache.spark:spark-sql-kafka-0-10_2.13:{pyspark.__version__}",
-    "com.mysql:mysql-connector-j:8.4.0",
+    "com.mysql:mysql-connector-j:8.0.32",
 ])
 
 spark = (SparkSession.builder
@@ -128,7 +128,7 @@ def foreach_batch_function(batch_df, batch_id):
 
 
 query = (avg_stream.writeStream
-         .outputMode("complete")
+         .outputMode("update")
          .foreachBatch(foreach_batch_function)
          .option("checkpointLocation", "checkpoints/enriched_athlete_avg")
          .trigger(processingTime="30 seconds")
