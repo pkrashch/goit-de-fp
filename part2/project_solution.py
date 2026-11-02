@@ -1,13 +1,13 @@
 """Фінальний проєкт. Частина 2, крок 4: Airflow DAG,
 що послідовно запускає landing_to_bronze -> bronze_to_silver -> silver_to_gold.
 """
-import os
 from datetime import datetime
 
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
-DAG_DIR = os.path.dirname(os.path.abspath(__file__))
+# Шлях до Spark-скриптів відносно кореня репозиторію airflow_sandbox
+SCRIPTS_DIR = "dags/polina_krashchenko_fp"
 
 default_args = {
     "owner": "polina_krashchenko",
@@ -24,21 +24,21 @@ with DAG(
 
     landing_to_bronze = SparkSubmitOperator(
         task_id="landing_to_bronze",
-        application=os.path.join(DAG_DIR, "landing_to_bronze.py"),
+        application=f"{SCRIPTS_DIR}/landing_to_bronze.py",
         conn_id="spark-default",
         verbose=1,
     )
 
     bronze_to_silver = SparkSubmitOperator(
         task_id="bronze_to_silver",
-        application=os.path.join(DAG_DIR, "bronze_to_silver.py"),
+        application=f"{SCRIPTS_DIR}/bronze_to_silver.py",
         conn_id="spark-default",
         verbose=1,
     )
 
     silver_to_gold = SparkSubmitOperator(
         task_id="silver_to_gold",
-        application=os.path.join(DAG_DIR, "silver_to_gold.py"),
+        application=f"{SCRIPTS_DIR}/silver_to_gold.py",
         conn_id="spark-default",
         verbose=1,
     )

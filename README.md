@@ -31,9 +31,9 @@ python kafka_reader.py      # окремий термінал
 | Файл | Що робить |
 |---|---|
 | `landing_to_bronze.py` | завантажує `athlete_bio.csv` і `athlete_event_results.csv` з FTP, зберігає parquet у `bronze/{table}` |
-| `bronze_to_silver.py` | чистить усі текстові колонки, видаляє дублікати, зберігає у `silver/{table}` |
+| `bronze_to_silver.py` | чистить усі текстові колонки (UDF `clean_text`), видаляє дублікати, зберігає у `silver/{table}` |
 | `silver_to_gold.py` | join за `athlete_id`, середні `weight` і `height` за `sport`, `medal`, `sex`, `country_noc` + `timestamp`, зберігає у `gold/avg_stats` |
-| `project_solution.py` | Airflow DAG `polina_krashchenko_fp_datalake`: `landing_to_bronze → bronze_to_silver → silver_to_gold` (`SparkSubmitOperator`) |
+| `project_solution.py` | Airflow DAG `polina_krashchenko_fp_datalake`: `landing_to_bronze → bronze_to_silver → silver_to_gold` (`SparkSubmitOperator`, `conn_id="spark-default"`, скрипти в `dags/polina_krashchenko_fp/` репозиторію airflow_sandbox) |
 
 Кожна Spark-задача виводить фінальний DataFrame через `df.show()`.
 

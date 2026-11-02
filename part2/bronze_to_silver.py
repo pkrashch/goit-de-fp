@@ -4,17 +4,23 @@
 і зберігає результат у silver/{table}.
 """
 import os
+import re
 
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType
 
 TABLES = ["athlete_bio", "athlete_event_results"]
 
 
-def clean_text(column):
-    """Залишає лише літери, цифри, пробіли та базову пунктуацію."""
-    return F.trim(F.regexp_replace(column, r"[^a-zA-Z0-9,.\\\"' ]", ""))
+def clean_text(text):
+    """Функція чистки тексту з матеріалів курсу (додатково залишаємо пробіли між словами)."""
+    if text is None:
+        return None
+    return re.sub(r'[^a-zA-Z0-9,.\\"\' ]', '', str(text)).strip()
+
+
+clean_text_udf = udf(clean_text, StringType())
 
 
 def main():
@@ -26,7 +32,7 @@ def main():
         # Чистка тексту для всіх текстових колонок
         for field in df.schema.fields:
             if isinstance(field.dataType, StringType):
-                df = df.withColumn(field.name, clean_text(F.col(field.name)))
+                df = df.withColumn(field.name, clean_text_udf(df[field.name]))
 
         # Дедублікація рядків
         df = df.dropDuplicates()
