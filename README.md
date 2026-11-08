@@ -59,3 +59,27 @@ python kafka_reader.py        # термінал 2
 **Частина 2**: http://localhost:8080 (логін `admin`, пароль —
 `docker compose exec airflow cat /opt/airflow/standalone_admin_password.txt`), запустити DAG
 `polina_krashchenko_fp_datalake`.
+
+## Скриншоти
+
+### Частина 1
+Результат у MySQL-таблиці `olympic_dataset.polina_krashchenko_enriched_athlete_avg`:
+![mysql](screenshots/part1_mysql_output_table.png)
+
+Дані з вихідного Kafka-топіку `polina_krashchenko_enriched_athlete_avg`:
+![kafka](screenshots/part1_kafka_output.png)
+
+Робота стриму (forEachBatch):
+![stream](screenshots/part1_streaming_batches.png)
+
+### Частина 2
+Граф відпрацьованого DAG:
+![graph](screenshots/part2_dag_graph.png)
+
+Grid:
+![grid](screenshots/part2_grid.png)
+
+Логи Spark-джобів (`df.show()`):
+![landing](screenshots/part2_log_landing_to_bronze.png)
+![silver](screenshots/part2_log_bronze_to_silver.png)
+![gold](screenshots/part2_log_silver_to_gold.png)
