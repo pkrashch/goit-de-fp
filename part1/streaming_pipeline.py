@@ -8,12 +8,12 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType, StructField, StructType
 
-from configs import (OUTPUT_TABLE, TOPIC_ENRICHED, TOPIC_EVENT_RESULTS, jdbc_url,
-                     kafka_spark_options, mysql_config)
+from configs import (MYSQL_CONNECTOR, OUTPUT_TABLE, TOPIC_ENRICHED, TOPIC_EVENT_RESULTS,
+                     jdbc_url, kafka_spark_options, mysql_config)
 
 PACKAGES = ",".join([
     f"org.apache.spark:spark-sql-kafka-0-10_2.13:{pyspark.__version__}",
-    "com.mysql:mysql-connector-j:8.0.32",
+    MYSQL_CONNECTOR,
 ])
 
 spark = (SparkSession.builder
@@ -46,6 +46,7 @@ bio_df = read_mysql_table("athlete_bio")
 # Етап 2: фільтрація — зріст і вага мають бути заповнені й бути числами
 # ---------------------------------------------------------------
 bio_df = (bio_df
+          .withColumn("athlete_id", F.expr("try_cast(athlete_id AS INT)"))
           .withColumn("height", F.expr("try_cast(height AS DOUBLE)"))
           .withColumn("weight", F.expr("try_cast(weight AS DOUBLE)"))
           .where(F.col("height").isNotNull() & F.col("weight").isNotNull())
@@ -77,11 +78,11 @@ events_stream = (spark.readStream
                  .options(**kafka_options)
                  .option("subscribe", TOPIC_EVENT_RESULTS)
                  .option("startingOffsets", "earliest")
-                 .option("maxOffsetsPerTrigger", "20000")
+                 .option("maxOffsetsPerTrigger", "50000")
                  .load()
                  .select(F.from_json(F.col("value").cast("string"), events_schema).alias("data"))
                  .select("data.*")
-                 .withColumn("athlete_id", F.col("athlete_id").cast("int")))
+                 .withColumn("athlete_id", F.expr("try_cast(athlete_id AS INT)")))
 
 # ---------------------------------------------------------------
 # Етап 4: об'єднання результатів змагань з біоданими за athlete_id
@@ -93,7 +94,8 @@ joined_stream = events_stream.join(bio_df, on="athlete_id", how="inner")
 #         (або її відсутності), статі та країни + timestamp розрахунку
 # ---------------------------------------------------------------
 avg_stream = (joined_stream
-              .withColumn("medal", F.coalesce(F.col("medal"), F.lit("No medal")))
+              .withColumn("medal", F.when(F.trim(F.coalesce(F.col("medal"), F.lit(""))) == "",
+                                          F.lit("No medal")).otherwise(F.col("medal")))
               .groupBy("sport", "medal", "sex", "country_noc")
               .agg(F.avg("height").alias("avg_height"),
                    F.avg("weight").alias("avg_weight"))
@@ -131,7 +133,7 @@ query = (avg_stream.writeStream
          .outputMode("update")
          .foreachBatch(foreach_batch_function)
          .option("checkpointLocation", "checkpoints/enriched_athlete_avg")
-         .trigger(processingTime="30 seconds")
+         .trigger(processingTime="15 seconds")
          .start())
 
 print(f"Streaming '{TOPIC_EVENT_RESULTS}' -> '{TOPIC_ENRICHED}' + MySQL '{OUTPUT_TABLE}'. Ctrl+C to stop.")

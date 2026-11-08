@@ -9,14 +9,19 @@ kafka_config = {
     "sasl_mechanism": "PLAIN",
 }
 
-# MySQL (сервер курсу). Логін і пароль надає ментор.
+# MySQL — локальний контейнер із docker-compose.yml (погоджено з ментором)
 mysql_config = {
-    "host": "217.61.57.46",
-    "port": 3306,
+    "host": "localhost",
+    "port": 3307,
     "database": "olympic_dataset",
-    "user": "MYSQL_USER",
-    "password": "MYSQL_PASSWORD",
+    "user": "fp_user",
+    "password": "fp_password",
 }
+
+# CSV курсу, з яких заповнюється MySQL
+FTP_URL = "https://ftp.goit.study/neoversity/"
+SOURCE_TABLES = ["athlete_bio", "athlete_event_results"]
+MYSQL_CONNECTOR = "com.mysql:mysql-connector-j:8.0.32"
 
 MY_NAME = "polina_krashchenko"
 
@@ -30,7 +35,7 @@ OUTPUT_TABLE = f"{MY_NAME}_enriched_athlete_avg"
 
 def jdbc_url():
     return (f"jdbc:mysql://{mysql_config['host']}:{mysql_config['port']}/"
-            f"{mysql_config['database']}")
+            f"{mysql_config['database']}?rewriteBatchedStatements=true")
 
 
 def kafka_spark_options():

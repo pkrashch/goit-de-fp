@@ -1,0 +1,14 @@
+# Airflow 2.8.1 + Java + PySpark, щоб SparkSubmitOperator міг запускати Spark-джоби локально
+FROM apache/airflow:2.8.1
+
+USER root
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends default-jre-headless procps \
+ && rm -rf /var/lib/apt/lists/*
+ENV JAVA_HOME=/usr/lib/jvm/default-java
+
+USER airflow
+RUN pip install --no-cache-dir \
+    "apache-airflow==2.8.1" \
+    "apache-airflow-providers-apache-spark==4.7.1" \
+    "pyspark==3.5.0"
